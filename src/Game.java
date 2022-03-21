@@ -148,12 +148,6 @@ public class Game extends JFrame {
         }
         return validMoves;
     }
-    public Vector<Integer> rookBorder(Vector<Integer> validMoves, int operator, int validIndex, int i){
-        if (validIndex+(1*operator) >= 0 && validIndex+(1*operator) <= 63 && board[validIndex+(1*operator)].contains(" ")){
-            validMoves.add((1*operator)*(i+1*(operator)));
-        }
-        return validMoves;
-    }
     public void markFields(Vector<Integer> validMoves, int index1){
         for (int i = 0; i < 64; i++){
             buttons.get(i).setEnabled(false);
