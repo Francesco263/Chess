@@ -136,6 +136,9 @@ public class Game extends JFrame {
             validMoves = rook(validMoves, operator, color);
             validMoves = rook(validMoves, operator*-1, color);
         }
+        else if (board[index1].equals("_b") || board[index1].equals("-b")){
+
+        }
         return validMoves;
     }
     public void markFields(Vector<Integer> validMoves, int index1){
@@ -194,6 +197,7 @@ public class Game extends JFrame {
         int validIndex = index1;
         int check = 0;
         int check2 = 0;
+        int check3 = 0;
         int i = 1;
         while(validIndex+(1*operator) <= 63 && validIndex+(1*operator) >= 0 && !board[validIndex+(1*operator)].contains(color) && board[validIndex+(1*operator)].contains(" ")){
             for (int h = 0; h < array.length; h++){
@@ -202,6 +206,9 @@ public class Game extends JFrame {
                 }
                 if (index1+((i+1)*operator) == array[h]+(1*operator)){
                     check2 = 1;
+                }
+                if (index1+(1*operator) == array[h]+(1*operator)){
+                    check3 = 1;
                 }
             }
             if (check!= 1){
@@ -212,6 +219,13 @@ public class Game extends JFrame {
             }
             i++;
             validIndex = validIndex + (1*operator);
+        }
+        if(check3 != 1){
+            if (index1+(1*operator) >= 0 && index1+(1*operator) <= 63){
+                if (!board[index1+(1*operator)].contains(color) && (!board[index1+(1*operator)].contains(" "))){
+                    validMoves.add(1*operator);
+                }
+            }
         }
         return validMoves;
     }
