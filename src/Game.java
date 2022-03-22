@@ -132,19 +132,9 @@ public class Game extends JFrame {
             }
             validMoves = pawn(validMoves,operator, color);
         }
-        return validMoves;
-    }
-    public Vector<Integer> pawn(Vector<Integer> validMoves, int operator, String color){
-        if (board[index1+(8*operator)].equals(" ") && board[index1+(8*operator)] != null){
-            validMoves.add(8*operator);
-        }
-        if ((index1+(9*operator)%8 != 0 && (index1+(6*operator))%8 != 0)){
-            if (!board[index1+(7*operator)].equals(" ") && !board[index1+(7*operator)].contains(color) && board[index1+(7*operator)] != null){
-                validMoves.add(7*operator);
-            }
-            if(!board[index1+(9*operator)].equals(" ") && !board[index1+(9*operator)].contains(color) && board[index1+(9*operator)] != null){
-                validMoves.add(9*operator);
-            }
+        else if (board[index1].equals("_r") || board[index1].equals("-r")){
+            validMoves = rook(validMoves, operator, color);
+            validMoves = rook(validMoves, operator*-1, color);
         }
         return validMoves;
     }
@@ -164,5 +154,65 @@ public class Game extends JFrame {
                 }
             }
         }
+    }
+    public Vector<Integer> pawn(Vector<Integer> validMoves, int operator, String color){
+        if (board[index1+(8*operator)].equals(" ") && board[index1+(8*operator)] != null){
+            validMoves.add(8*operator);
+        }
+        if ((index1+(9*operator)%8 != 0 && (index1+(6*operator))%8 != 0)){
+            if (!board[index1+(7*operator)].equals(" ") && !board[index1+(7*operator)].contains(color) && board[index1+(7*operator)] != null){
+                validMoves.add(7*operator);
+            }
+            if(!board[index1+(9*operator)].equals(" ") && !board[index1+(9*operator)].contains(color) && board[index1+(9*operator)] != null){
+                validMoves.add(9*operator);
+            }
+        }
+        return validMoves;
+    }
+    public Vector<Integer> rook(Vector<Integer> validMoves, int operator, String color){
+        int[] borderRight = new int[]{0,8,16,24,32,40,48,56};
+        int[] borderLeft = new int[]{7,15,23,31,39,47,55, 63};
+        int validIndex = index1;
+        int i = 1;
+        while (validIndex+(8*operator) <= 63 && validIndex+(8*operator) >= 0 && board[validIndex+(8*operator)].contains(" ")){
+            validMoves.add((8*operator)*i);
+            validIndex = validIndex+(8*operator);
+            i++;
+        }
+        if (index1+((8*operator)*i) >= 0 && index1+((8*operator)*i) <= 63 && !board[index1+((8*operator)*i)].contains(color)){
+            validMoves.add((8*operator)*i);
+        }
+        if (operator == 1){
+            validMoves = roookCheckBorders(validMoves, borderLeft, index1, 1, color);
+        }
+        else{
+            validMoves = roookCheckBorders(validMoves, borderRight, index1, -1, color);
+        }
+        return validMoves;
+    }
+    public Vector<Integer> roookCheckBorders(Vector<Integer> validMoves, int[] array, int index1, int operator, String color){
+        int validIndex = index1;
+        int check = 0;
+        int check2 = 0;
+        int i = 1;
+        while(validIndex+(1*operator) <= 63 && validIndex+(1*operator) >= 0 && !board[validIndex+(1*operator)].contains(color) && board[validIndex+(1*operator)].contains(" ")){
+            for (int h = 0; h < array.length; h++){
+                if (validIndex+(1*operator) == array[h]+(1*operator)){
+                    check = 1;
+                }
+                if (index1+((i+1)*operator) == array[h]+(1*operator)){
+                    check2 = 1;
+                }
+            }
+            if (check!= 1){
+                validMoves.add(i*(operator));
+                if (check2 != 1 && !board[index1+((i+1)*operator)].contains(color) && !board[index1+((i+1)*operator)].contains(" ")){
+                    validMoves.add((i+1)*(operator));
+                }
+            }
+            i++;
+            validIndex = validIndex + (1*operator);
+        }
+        return validMoves;
     }
 }
