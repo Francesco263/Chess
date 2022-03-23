@@ -121,23 +121,48 @@ public class Game extends JFrame {
         Vector<Integer> validMoves = new Vector<>();
         if (board[index1].equals("_p") || board[index1].equals("-p")){
             if (operator == -1){
-                if (index1 >= 48 && index1 <= 55 && board[index1-16].equals(" ") && board[index1-16] != null){
+                if (index1 >= 48 && index1 <= 55 && board[index1-16].equals(" ") && board[index1-16] != null  && board[index1-8].equals(" ")){
                     validMoves.add(-16);
                 }
             }
             else{
-                if (index1 >= 8 && index1 <= 15 && board[index1+16].equals(" ") && board[index1+16] != null){
+                if (index1 >= 8 && index1 <= 15 && board[index1+16].equals(" ") && board[index1+16] != null && board[index1+8].equals(" ")){
                     validMoves.add(16);
                 }
             }
-            validMoves = pawn(validMoves,operator, color);
+            pawn(validMoves,operator, color);
         }
         else if (board[index1].equals("_r") || board[index1].equals("-r")){
-            validMoves = rook(validMoves, operator, color);
-            validMoves = rook(validMoves, operator*-1, color);
+            prepareRook(validMoves, operator, color);
         }
         else if (board[index1].equals("_b") || board[index1].equals("-b")){
-
+            prepareBishop(validMoves, operator, color);
+        }
+        else if (board[index1].equals("_q") || board[index1].equals("-q")){
+            prepareRook(validMoves, operator, color);
+            prepareBishop(validMoves, operator, color);
+        }
+        return validMoves;
+    }
+    public Vector<Integer> prepareRook(Vector<Integer> validMoves, int operator, String color){
+        validMoves = rook(validMoves, operator, color);
+        validMoves = rook(validMoves, operator*-1, color);
+        return validMoves;
+    }
+    public Vector<Integer> prepareBishop(Vector<Integer> validMoves, int operator, String color){
+        int[] borderRight = new int[]{0,8,16,24,32,40,48,56};
+        int[] borderLeft = new int[]{7,15,23,31,39,47,55, 63};
+        if (operator == 1){
+            validMoves = bishop(validMoves, operator, color, 9, borderLeft);
+            validMoves = bishop(validMoves, operator, color, 7, borderRight);
+            validMoves = bishop(validMoves, operator*(-1), color, 9, borderRight);
+            validMoves = bishop(validMoves, operator*(-1), color, 7, borderLeft);
+        }
+        else{
+            validMoves = bishop(validMoves, operator, color, 9, borderRight);
+            validMoves = bishop(validMoves, operator, color, 7, borderLeft);
+            validMoves = bishop(validMoves, operator*(-1), color, 9, borderLeft);
+            validMoves = bishop(validMoves, operator*(-1), color, 7, borderRight);
         }
         return validMoves;
     }
@@ -186,14 +211,14 @@ public class Game extends JFrame {
             validMoves.add((8*operator)*i);
         }
         if (operator == 1){
-            validMoves = roookCheckBorders(validMoves, borderLeft, index1, 1, color);
+            validMoves = moveUntilBorder(validMoves, borderLeft, index1, 1, color);
         }
         else{
-            validMoves = roookCheckBorders(validMoves, borderRight, index1, -1, color);
+            validMoves = moveUntilBorder(validMoves, borderRight, index1, -1, color);
         }
         return validMoves;
     }
-    public Vector<Integer> roookCheckBorders(Vector<Integer> validMoves, int[] array, int index1, int operator, String color){
+    public Vector<Integer> moveUntilBorder(Vector<Integer> validMoves, int[] array, int index1, int operator, String color){
         int validIndex = index1;
         int check = 0;
         int check2 = 0;
@@ -228,5 +253,34 @@ public class Game extends JFrame {
             }
         }
         return validMoves;
+    }
+    public Vector<Integer> bishop(Vector<Integer> validMoves, int operator, String color, int number, int[] array){
+        int validIndex = index1;
+        int check = 0;
+        int i = 1;
+        while(validIndex+(number*operator) >= 0 && validIndex+(number*operator) <= 63 && !board[validIndex+(number*operator)].contains(color)){
+            check = checkBorder(check, validIndex+(number*operator), array);
+            if (check == 0){
+                validMoves.add((i*number)*operator);
+                if (!board[validIndex+(number*operator)].contains(color) && !board[validIndex+(number*operator)].contains(" ")){
+                    break;
+                }
+            }
+            else if (check == 1){
+                validMoves.add((i*number)*operator);
+                check = 2;
+            }
+            i++;
+            validIndex = validIndex+(number*operator);
+        }
+        return validMoves;
+    }
+    public int checkBorder(int check, int validIndex, int[] array){
+        for (int i = 0; i < array.length; i++){
+            if (validIndex == array[i]){
+                check = 1;
+            }
+        }
+        return check;
     }
 }
