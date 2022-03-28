@@ -120,65 +120,6 @@ public class Game extends JFrame {
         board[index1] = " ";
         updateBoard();
     }
-    public Vector<Integer> validation(int index1, int operator, String color){
-        Vector<Integer> validMoves = new Vector<>();
-        if (board[index1].equals("_p") || board[index1].equals("-p")){
-            if (operator == -1){
-                if (index1 >= 48 && index1 <= 55 && board[index1-16].equals(" ") && board[index1-16] != null  && board[index1-8].equals(" ")){
-                    validMoves.add(-16);
-                }
-            }
-            else{
-                if (index1 >= 8 && index1 <= 15 && board[index1+16].equals(" ") && board[index1+16] != null && board[index1+8].equals(" ")){
-                    validMoves.add(16);
-                }
-            }
-            pawn(validMoves,operator, color);
-        }
-        else if (board[index1].equals("_r") || board[index1].equals("-r")){
-            prepareRook(validMoves, operator, color, false);
-        }
-        else if (board[index1].equals("_b") || board[index1].equals("-b")){
-            prepareBishop(validMoves, operator, color, false);
-        }
-        else if (board[index1].equals("_q") || board[index1].equals("-q")){
-            prepareRook(validMoves, operator, color, false);
-            prepareBishop(validMoves, operator, color, false);
-        }
-        else if (board[index1].equals("_k") || board[index1].equals("-k")){
-            prepareBishop(validMoves, operator, color, true);
-            prepareRook(validMoves, operator, color, true);
-        }
-        return validMoves;
-    }
-    public Vector<Integer> prepareRook(Vector<Integer> validMoves, int operator, String color, boolean king){
-        if (operator == 1){
-            validMoves = bishop(validMoves, operator, color, 1, borderRight, king);
-            validMoves = bishop(validMoves, -1, color, 1, borderLeft, king);
-        }
-        else{
-            validMoves = bishop(validMoves, operator, color, 1, borderLeft, king);
-            validMoves = bishop(validMoves, 1, color, 1, borderRight, king);
-        }
-        validMoves = bishop(validMoves, operator, color, 8, temp, king);
-        validMoves = bishop(validMoves, operator*(-1), color, 8, temp, king);
-        return validMoves;
-    }
-    public Vector<Integer> prepareBishop(Vector<Integer> validMoves, int operator, String color, boolean king){
-        if (operator == 1){
-            validMoves = bishop(validMoves, operator, color, 9, borderRight, king);
-            validMoves = bishop(validMoves, operator, color, 7, borderLeft, king);
-            validMoves = bishop(validMoves, operator*(-1), color, 9, borderLeft, king);
-            validMoves = bishop(validMoves, operator*(-1), color, 7, borderRight, king);
-        }
-        else{
-            validMoves = bishop(validMoves, operator, color, 9, borderLeft, king);
-            validMoves = bishop(validMoves, operator, color, 7, borderRight, king);
-            validMoves = bishop(validMoves, operator*(-1), color, 9, borderRight, king);
-            validMoves = bishop(validMoves, operator*(-1), color, 7, borderLeft, king);
-        }
-        return validMoves;
-    }
     public void markFields(Vector<Integer> validMoves, int index1){
         for (int i = 0; i < 64; i++){
             buttons.get(i).setEnabled(false);
@@ -196,7 +137,54 @@ public class Game extends JFrame {
             }
         }
     }
+    public Vector<Integer> validation(int index1, int operator, String color){
+        Vector<Integer> validMoves = new Vector<>();
+        if (board[index1].equals("_p") || board[index1].equals("-p")){
+            pawn(validMoves,operator, color);
+        }
+        else if (board[index1].equals("_r") || board[index1].equals("-r")){
+            prepareRook(validMoves, color, false);
+        }
+        else if (board[index1].equals("_b") || board[index1].equals("-b")){
+            prepareBishop(validMoves, color, false);
+        }
+        else if (board[index1].equals("_q") || board[index1].equals("-q")){
+            prepareRook(validMoves, color, false);
+            prepareBishop(validMoves, color, false);
+        }
+        else if (board[index1].equals("_k") || board[index1].equals("-k")){
+            prepareBishop(validMoves, color, true);
+            prepareRook(validMoves, color, true);
+        }
+        return validMoves;
+    }
+    public Vector<Integer> prepareRook(Vector<Integer> validMoves, String color, boolean king){
+        int operator = 1;
+        bishop(validMoves, operator, color, 1, borderRight, king);
+        bishop(validMoves, operator, color, 8, temp, king);
+        bishop(validMoves, -1, color, 1, borderLeft, king);
+        bishop(validMoves, -1, color, 8, temp, king);
+        return validMoves;
+    }
+    public Vector<Integer> prepareBishop(Vector<Integer> validMoves, String color, boolean king){
+        int operator = 1;
+        bishop(validMoves, operator, color, 9, borderRight, king);
+        bishop(validMoves, operator, color, 7, borderLeft, king);
+        bishop(validMoves, -1, color, 9, borderLeft, king);
+        bishop(validMoves, -1, color, 7, borderRight, king);
+        return validMoves;
+    }
     public Vector<Integer> pawn(Vector<Integer> validMoves, int operator, String color){
+        if (operator == -1){
+            if (index1 >= 48 && index1 <= 55 && board[index1-16].equals(" ") && board[index1-16] != null  && board[index1-8].equals(" ")){
+                validMoves.add(-16);
+            }
+        }
+        else{
+            if (index1 >= 8 && index1 <= 15 && board[index1+16].equals(" ") && board[index1+16] != null && board[index1+8].equals(" ")){
+                validMoves.add(16);
+            }
+        }
         if (board[index1+(8*operator)].equals(" ") && board[index1+(8*operator)] != null){
             validMoves.add(8*operator);
         }
