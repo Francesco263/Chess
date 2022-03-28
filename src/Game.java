@@ -16,12 +16,15 @@ public class Game extends JFrame {
             "_p","_p","_p","_p","_p","_p","_p","_p",
             "_r","_h","_b","_q","_k","_b","_h","_r"
     };
-    public int buttonCount = 0;
-    public int cntr = 1;
-    public int player = 0;
-    public int index1;
-    public int index2;
-    ArrayList<JButton> buttons = new ArrayList<>(64);
+    private int[] borderRight = new int[]{0,8,16,24,32,40,48,56};
+    private int[] borderLeft = new int[]{7,15,23,31,39,47,55, 63};
+    int[] temp = new int[]{1};
+    private int buttonCount = 0;
+    private int cntr = 1;
+    private int player = 0;
+    private int index1;
+    private int index2;
+    private ArrayList<JButton> buttons = new ArrayList<>(64);
     JPanel mainPanel = new JPanel(new GridLayout(8,8));
     public Game(){
         getContentPane().setLayout(new BorderLayout());
@@ -133,36 +136,46 @@ public class Game extends JFrame {
             pawn(validMoves,operator, color);
         }
         else if (board[index1].equals("_r") || board[index1].equals("-r")){
-            prepareRook(validMoves, operator, color);
+            prepareRook(validMoves, operator, color, false);
         }
         else if (board[index1].equals("_b") || board[index1].equals("-b")){
-            prepareBishop(validMoves, operator, color);
+            prepareBishop(validMoves, operator, color, false);
         }
         else if (board[index1].equals("_q") || board[index1].equals("-q")){
-            prepareRook(validMoves, operator, color);
-            prepareBishop(validMoves, operator, color);
+            prepareRook(validMoves, operator, color, false);
+            prepareBishop(validMoves, operator, color, false);
+        }
+        else if (board[index1].equals("_k") || board[index1].equals("-k")){
+            prepareBishop(validMoves, operator, color, true);
+            prepareRook(validMoves, operator, color, true);
         }
         return validMoves;
     }
-    public Vector<Integer> prepareRook(Vector<Integer> validMoves, int operator, String color){
-        validMoves = rook(validMoves, operator, color);
-        validMoves = rook(validMoves, operator*-1, color);
-        return validMoves;
-    }
-    public Vector<Integer> prepareBishop(Vector<Integer> validMoves, int operator, String color){
-        int[] borderRight = new int[]{0,8,16,24,32,40,48,56};
-        int[] borderLeft = new int[]{7,15,23,31,39,47,55, 63};
+    public Vector<Integer> prepareRook(Vector<Integer> validMoves, int operator, String color, boolean king){
         if (operator == 1){
-            validMoves = bishop(validMoves, operator, color, 9, borderLeft);
-            validMoves = bishop(validMoves, operator, color, 7, borderRight);
-            validMoves = bishop(validMoves, operator*(-1), color, 9, borderRight);
-            validMoves = bishop(validMoves, operator*(-1), color, 7, borderLeft);
+            validMoves = bishop(validMoves, operator, color, 1, borderRight, king);
+            validMoves = bishop(validMoves, -1, color, 1, borderLeft, king);
         }
         else{
-            validMoves = bishop(validMoves, operator, color, 9, borderRight);
-            validMoves = bishop(validMoves, operator, color, 7, borderLeft);
-            validMoves = bishop(validMoves, operator*(-1), color, 9, borderLeft);
-            validMoves = bishop(validMoves, operator*(-1), color, 7, borderRight);
+            validMoves = bishop(validMoves, operator, color, 1, borderLeft, king);
+            validMoves = bishop(validMoves, 1, color, 1, borderRight, king);
+        }
+        validMoves = bishop(validMoves, operator, color, 8, temp, king);
+        validMoves = bishop(validMoves, operator*(-1), color, 8, temp, king);
+        return validMoves;
+    }
+    public Vector<Integer> prepareBishop(Vector<Integer> validMoves, int operator, String color, boolean king){
+        if (operator == 1){
+            validMoves = bishop(validMoves, operator, color, 9, borderRight, king);
+            validMoves = bishop(validMoves, operator, color, 7, borderLeft, king);
+            validMoves = bishop(validMoves, operator*(-1), color, 9, borderLeft, king);
+            validMoves = bishop(validMoves, operator*(-1), color, 7, borderRight, king);
+        }
+        else{
+            validMoves = bishop(validMoves, operator, color, 9, borderLeft, king);
+            validMoves = bishop(validMoves, operator, color, 7, borderRight, king);
+            validMoves = bishop(validMoves, operator*(-1), color, 9, borderRight, king);
+            validMoves = bishop(validMoves, operator*(-1), color, 7, borderLeft, king);
         }
         return validMoves;
     }
@@ -197,90 +210,35 @@ public class Game extends JFrame {
         }
         return validMoves;
     }
-    public Vector<Integer> rook(Vector<Integer> validMoves, int operator, String color){
-        int[] borderRight = new int[]{0,8,16,24,32,40,48,56};
-        int[] borderLeft = new int[]{7,15,23,31,39,47,55, 63};
-        int validIndex = index1;
-        int i = 1;
-        while (validIndex+(8*operator) <= 63 && validIndex+(8*operator) >= 0 && board[validIndex+(8*operator)].contains(" ")){
-            validMoves.add((8*operator)*i);
-            validIndex = validIndex+(8*operator);
-            i++;
-        }
-        if (index1+((8*operator)*i) >= 0 && index1+((8*operator)*i) <= 63 && !board[index1+((8*operator)*i)].contains(color)){
-            validMoves.add((8*operator)*i);
-        }
-        if (operator == 1){
-            validMoves = moveUntilBorder(validMoves, borderLeft, index1, 1, color);
-        }
-        else{
-            validMoves = moveUntilBorder(validMoves, borderRight, index1, -1, color);
-        }
-        return validMoves;
-    }
-    public Vector<Integer> moveUntilBorder(Vector<Integer> validMoves, int[] array, int index1, int operator, String color){
-        int validIndex = index1;
-        int check = 0;
-        int check2 = 0;
-        int check3 = 0;
-        int i = 1;
-        while(validIndex+(1*operator) <= 63 && validIndex+(1*operator) >= 0 && !board[validIndex+(1*operator)].contains(color) && board[validIndex+(1*operator)].contains(" ")){
-            for (int h = 0; h < array.length; h++){
-                if (validIndex+(1*operator) == array[h]+(1*operator)){
-                    check = 1;
-                }
-                if (index1+((i+1)*operator) == array[h]+(1*operator)){
-                    check2 = 1;
-                }
-                if (index1+(1*operator) == array[h]+(1*operator)){
-                    check3 = 1;
-                }
-            }
-            if (check!= 1){
-                validMoves.add(i*(operator));
-                if (check2 != 1 && !board[index1+((i+1)*operator)].contains(color) && !board[index1+((i+1)*operator)].contains(" ")){
-                    validMoves.add((i+1)*(operator));
-                }
-            }
-            i++;
-            validIndex = validIndex + (1*operator);
-        }
-        if(check3 != 1){
-            if (index1+(1*operator) >= 0 && index1+(1*operator) <= 63){
-                if (!board[index1+(1*operator)].contains(color) && (!board[index1+(1*operator)].contains(" "))){
-                    validMoves.add(1*operator);
-                }
-            }
-        }
-        return validMoves;
-    }
-    public Vector<Integer> bishop(Vector<Integer> validMoves, int operator, String color, int number, int[] array){
+    public Vector<Integer> bishop(Vector<Integer> validMoves, int operator, String color, int number, int[] array, boolean king){
         int validIndex = index1;
         int check = 0;
         int i = 1;
-        while(validIndex+(number*operator) >= 0 && validIndex+(number*operator) <= 63 && !board[validIndex+(number*operator)].contains(color)){
-            check = checkBorder(check, validIndex+(number*operator), array);
-            if (check == 0){
+        if (((array[0] == 0 && operator == -1 && checkBorder(validIndex, array))||(array[0] == 7 && operator == 1 && checkBorder(validIndex, array))) && number != 8 && number != 7){
+            return validMoves;
+        }
+        while(validIndex+(number*operator) >= 0 && validIndex+(number*operator) <= 63 && !board[validIndex+(number*operator)].contains(color) && !checkBorder(validIndex + (number * operator), array)){
+            if (board[validIndex+(number*operator)].contains(" ")){
                 validMoves.add((i*number)*operator);
-                if (!board[validIndex+(number*operator)].contains(color) && !board[validIndex+(number*operator)].contains(" ")){
-                    break;
-                }
             }
-            else if (check == 1){
+            if (!board[validIndex+(number*operator)].contains(" ") && !board[validIndex+(number*operator)].contains(color)){
                 validMoves.add((i*number)*operator);
-                check = 2;
+                break;
             }
             i++;
-            validIndex = validIndex+(number*operator);
+            validIndex = validIndex + (number*operator);
+            if (king){
+                break;
+            }
         }
         return validMoves;
     }
-    public int checkBorder(int check, int validIndex, int[] array){
+    public boolean checkBorder(int validIndex, int[] array){
         for (int i = 0; i < array.length; i++){
             if (validIndex == array[i]){
-                check = 1;
+                return true;
             }
         }
-        return check;
+        return false;
     }
 }
