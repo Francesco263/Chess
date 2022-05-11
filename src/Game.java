@@ -7,7 +7,7 @@ import java.util.Vector;
 
 public class Game extends JFrame {
     private String[] board = new String[]{
-            "-r","-h","-b","-k","-q","-b","-h","-r",
+            "-r","-h","-b","-q","-k","-b","-h","-r",
             "-p","-p","-p","-p","-p","-p","-p","-p",
             " "," "," "," "," "," "," "," ",
             " "," "," "," "," "," "," "," ",
@@ -18,6 +18,8 @@ public class Game extends JFrame {
     };
     private int[] borderRight = new int[]{0,8,16,24,32,40,48,56};
     private int[] borderLeft = new int[]{7,15,23,31,39,47,55, 63};
+    private Vector<String> deadPlayers = new Vector<>();
+    JPanel deadPLayerBoard = new JPanel(new GridLayout());
     private int[] temp = new int[]{1};
     private int buttonCount = 0;
     private int cntr = 1;
@@ -26,9 +28,18 @@ public class Game extends JFrame {
     private int index2;
     private ArrayList<JButton> buttons = new ArrayList<>(64);
     private JPanel mainPanel = new JPanel(new GridLayout(8,8));
+    private boolean castling1 = true;
+    private boolean castling2 = true;
+    private boolean castling = false;
+    private boolean enPassant = false;
+    private int enPassantPosition;
+    private boolean performEnPassant = false;
     public Game(){
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(mainPanel, BorderLayout.CENTER);
+        getContentPane().add(deadPLayerBoard, BorderLayout.EAST);
+        deadPLayerBoard = new JPanel(new GridLayout());
+        getContentPane().add(deadPLayerBoard, BorderLayout.EAST);
         for (int i = 0; i<8; i++){
             if (i%2==0){
                 createBoard(1);
@@ -37,10 +48,10 @@ public class Game extends JFrame {
                 createBoard(2);
             }
         }
-        setTitle("Chess v1.11");
+        setTitle("Chess v1.31");
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800,800);
+        setSize(800, 800);
         setResizable(false);
     }
     public void createBoard(int set){
@@ -92,13 +103,26 @@ public class Game extends JFrame {
             if (cntr%2 == 0){
                 index2 = Integer.parseInt(button.getName());
                 if (index1 != index2){
+
+                    checkReadyForCastling(index1, index2);
+                    checkReadyForEnPassant(index1, index2);
+
                     performPlay(index1,index2);
+
+                    if (castling){
+                        castling(index1, index2);
+                        castling = false;
+                    }
+
+
                     cntr++;
                     buttons.get(index2).setEnabled(false);
                 }
                 else{
                     cntr--;
                     player--;
+                    castling = false;
+                    performEnPassant = false;
                     updateBoard();
                 }
             }
@@ -116,8 +140,50 @@ public class Game extends JFrame {
         }
     }
     public void performPlay(int index1, int index2){
+        if (performEnPassant){
+            if ((index1 > index2) && index2 == enPassantPosition-8){
+                deadPlayers.add(board[index2+8]);
+                board[index2+8] = " ";
+            }
+            else if (index2 == enPassantPosition+8){
+                deadPlayers.add(board[index2-8]);
+                board[index2-8] = " ";
+            }
+            performEnPassant = false;
+        }
+        deadPlayers.add(board[index2]);
         board[index2] = board[index1];
         board[index1] = " ";
+        updateBoard();
+    }
+    public void checkReadyForCastling(int index1, int index2){
+        if (board[index1].contains("_k") || board[index1].contains("_r")){
+            castling1 = false;
+        }
+        else if (board[index1].contains("-k") || board[index1].contains("-r")){
+            castling2 = false;
+        }
+    }
+    public void checkReadyForEnPassant(int index1, int index2){
+        if(enPassant && (board[index1].contains("_") && !board[enPassantPosition].contains("_")) || ((board[index1].contains("-") && !board[enPassantPosition].contains("-")))){
+            enPassant = false;
+        }
+        if (board[index1].contains("p") || board[index1].contains("P")){
+            if ((board[index1].contains("_") && index1-16 == index2) || (board[index1].contains("-") && index1+16 == index2)){
+                enPassantPosition = index2;
+                enPassant = true;
+            }
+        }
+    }
+    public void castling(int index1, int index2){
+        if (index2 > index1){
+            board[index2-1] = board[index2+1];
+            board[index2+1] = " ";
+        }
+        else{
+            board[index2+1] = board[index2-2];
+            board[index2-2] = " ";
+        }
         updateBoard();
     }
     public void markFields(Vector<Integer> validMoves, int index1){
@@ -130,6 +196,9 @@ public class Game extends JFrame {
                 buttons.get(index1+validMoves.get(i)).setEnabled(true);
                 if (board[index1+validMoves.get(i)].equals(" ")){
                     buttons.get(index1+validMoves.get(i)).setIcon(new ImageIcon("files/valid.png"));
+                    if ((validMoves.get(i) == 2 || validMoves.get(i) == -2) && castling){
+                        buttons.get(index1+validMoves.get(i)).setBorder(BorderFactory.createLineBorder(Color.GREEN));
+                    }
                 }
                 else{
                     buttons.get(index1+validMoves.get(i)).setBorder(BorderFactory.createLineBorder(Color.RED));
@@ -139,77 +208,131 @@ public class Game extends JFrame {
     }
     public Vector<Integer> validation(int index1, int operator, String color){
         Vector<Integer> validMoves = new Vector<>();
-        if (board[index1].equals("_p") || board[index1].equals("-p")){
-            pawn(validMoves,operator, color);
-        }
-        else if (board[index1].equals("_r") || board[index1].equals("-r")){
-            prepareRook(validMoves, color, false, false);
-        }
-        else if (board[index1].equals("_b") || board[index1].equals("-b")){
-            prepareBishop(validMoves, color, false, false);
-        }
-        else if (board[index1].equals("_q") || board[index1].equals("-q")){
-            prepareRook(validMoves, color, false, false);
-            prepareBishop(validMoves, color, false, false);
-        }
-        else if (board[index1].equals("_k") || board[index1].equals("-k")){
-            prepareBishop(validMoves, color, true, false);
-            prepareRook(validMoves, color, true, false);
-        }
-        else if (board[index1].equals("_h") || board[index1].equals("-h")){
-            prepareHorse(validMoves, color, true, true);
+        switch (board[index1]) {
+            case "_p":
+            case "-p":
+                pawn(validMoves, operator, color);
+                break;
+            case "_r":
+            case "-r":
+                prepareRook(validMoves, color, false, false);
+                break;
+            case "_b":
+            case "-b":
+                prepareBishop(validMoves, color, false, false);
+                break;
+            case "_q":
+            case "-q":
+                prepareRook(validMoves, color, false, false);
+                prepareBishop(validMoves, color, false, false);
+                break;
+            case "_k":
+            case "-k":
+                prepareBishop(validMoves, color, true, false);
+                prepareRook(validMoves, color, true, false);
+                castling(index1, operator, color, validMoves);
+                break;
+            case "_h":
+            case "-h":
+                prepareHorse(validMoves, color, true, true);
+                break;
         }
         return validMoves;
     }
     public void prepareHorse(Vector<Integer> validMoves, String color, boolean king, boolean horse){
         int operator = 1;
-        bishop(validMoves, operator, color, 17, borderRight, king, horse);
-        bishop(validMoves, operator, color, 10, borderRight, king, horse);
-        bishop(validMoves, operator, color, 15, borderLeft, king, horse);
-        bishop(validMoves, operator, color, 6, borderLeft, king, horse);
-        bishop(validMoves, -1, color, 17, borderLeft, king, horse);
-        bishop(validMoves, -1, color, 10, borderLeft, king, horse);
-        bishop(validMoves, -1, color, 15, borderRight, king, horse);
-        bishop(validMoves, -1, color, 6, borderRight, king, horse);
+        calculateMove(validMoves, operator, color, 17, borderRight, king, horse);
+        calculateMove(validMoves, operator, color, 10, borderRight, king, horse);
+        calculateMove(validMoves, operator, color, 15, borderLeft, king, horse);
+        calculateMove(validMoves, operator, color, 6, borderLeft, king, horse);
+        calculateMove(validMoves, -1, color, 17, borderLeft, king, horse);
+        calculateMove(validMoves, -1, color, 10, borderLeft, king, horse);
+        calculateMove(validMoves, -1, color, 15, borderRight, king, horse);
+        calculateMove(validMoves, -1, color, 6, borderRight, king, horse);
     }
     public void prepareRook(Vector<Integer> validMoves, String color, boolean king, boolean horse){
         int operator = 1;
-        bishop(validMoves, operator, color, 1, borderRight, king, horse);
-        bishop(validMoves, operator, color, 8, temp, king, horse);
-        bishop(validMoves, -1, color, 1, borderLeft, king, horse);
-        bishop(validMoves, -1, color, 8, temp, king, horse);
+        calculateMove(validMoves, operator, color, 1, borderRight, king, horse);
+        calculateMove(validMoves, operator, color, 8, temp, king, horse);
+        calculateMove(validMoves, -1, color, 1, borderLeft, king, horse);
+        calculateMove(validMoves, -1, color, 8, temp, king, horse);
     }
     public void prepareBishop(Vector<Integer> validMoves, String color, boolean king, boolean horse){
         int operator = 1;
-        bishop(validMoves, operator, color, 9, borderRight, king, horse);
-        bishop(validMoves, operator, color, 7, borderLeft, king, horse);
-        bishop(validMoves, -1, color, 9, borderLeft, king, horse);
-        bishop(validMoves, -1, color, 7, borderRight, king, horse);
+        calculateMove(validMoves, operator, color, 9, borderRight, king, horse);
+        calculateMove(validMoves, operator, color, 7, borderLeft, king, horse);
+        calculateMove(validMoves, -1, color, 9, borderLeft, king, horse);
+        calculateMove(validMoves, -1, color, 7, borderRight, king, horse);
     }
     public void pawn(Vector<Integer> validMoves, int operator, String color){
         if (operator == -1){
-            if (index1 >= 48 && index1 <= 55 && board[index1-16].equals(" ") && board[index1-16] != null  && board[index1-8].equals(" ")){
-                validMoves.add(-16);
-            }
+            pawnMoves(validMoves, operator, color, 48, 55, borderLeft, borderRight);
         }
         else{
-            if (index1 >= 8 && index1 <= 15 && board[index1+16].equals(" ") && board[index1+16] != null && board[index1+8].equals(" ")){
-                validMoves.add(16);
-            }
+            pawnMoves(validMoves, operator, color, 8, 15, borderRight, borderLeft);
         }
-        if (board[index1+(8*operator)].equals(" ") && board[index1+(8*operator)] != null){
-            validMoves.add(8*operator);
-        }
-        if ((index1+(9*operator)%8 != 0 && (index1+(6*operator))%8 != 0)){
-            if (!board[index1+(7*operator)].equals(" ") && !board[index1+(7*operator)].contains(color) && board[index1+(7*operator)] != null){
-                validMoves.add(7*operator);
+        if (enPassant){
+            if ((board[index1].contains("_") && !board[enPassantPosition].contains("_")) || ((board[index1].contains("-") && !board[enPassantPosition].contains("-")))){
+                if (enPassantPosition+1 == index1 || enPassantPosition-1 == index1){
+                    if (!((checkBorder(index1, borderLeft) && checkBorder(enPassantPosition, borderRight)) || (checkBorder(index1, borderRight) && checkBorder(enPassantPosition, borderLeft)))){
+                        if (operator == -1 && enPassantPosition > index1){
+                            validMoves.add(-7);
+                            buttons.get(index1+1).setBorder(BorderFactory.createLineBorder(Color.GREEN));
+                        }
+                        else if (operator == -1){
+                            validMoves.add(-9);
+                            buttons.get(index1-1).setBorder(BorderFactory.createLineBorder(Color.GREEN));
+                        }
+                        if (operator == 1 && enPassantPosition < index1){
+                            validMoves.add(7);
+                            buttons.get(index1-1).setBorder(BorderFactory.createLineBorder(Color.GREEN));
+                        }
+                        else if (operator == 1){
+                            validMoves.add(9);
+                            buttons.get(index1+1).setBorder(BorderFactory.createLineBorder(Color.GREEN));
+                        }
+                        performEnPassant = true;
+                    }
+                }
             }
-            if(!board[index1+(9*operator)].equals(" ") && !board[index1+(9*operator)].contains(color) && board[index1+(9*operator)] != null){
-                validMoves.add(9*operator);
+            else{
+                enPassant = false;
             }
         }
     }
-    public void bishop(Vector<Integer> validMoves, int operator, String color, int number, int[] array, boolean king, boolean horse){
+    public void pawnMoves(Vector<Integer> validMoves, int operator, String color, int num1, int num2, int[] arr1, int[] arr2){
+        if (index1 >= num1 && index1 <= num2 && board[index1+(16*operator)].equals(" ") && board[index1+(16*operator)] != null  && board[index1+(8*operator)].equals(" ")){
+            validMoves.add(16*operator);
+        }
+        if (!board[index1+(9*operator)].equals(color) && !board[index1+9*operator].equals(" ")){
+            calculateMove(validMoves, operator, color, 9, arr1, true, false);
+        }
+        if (!board[index1+(7*operator)].equals(color) && !board[index1+(7*operator)].equals(" ")){
+            calculateMove(validMoves, operator, color, 7, arr2, true, false);
+        }
+        if (board[index1+(8*operator)].equals(" ")){
+            calculateMove(validMoves, operator, color, 8, temp, true, false);
+        }
+    }
+    public void castling(int index1, int operator, String color, Vector<Integer> validMoves){
+        if (color.equals("_") && castling1){
+            calculateCastling(index1, operator, color, validMoves);
+            castling = true;
+        }
+        else if (color.equals("-") && castling2){
+            calculateCastling(index1, operator, color, validMoves);
+            castling = true;
+        }
+    }
+    public void calculateCastling(int index1, int operator, String color, Vector<Integer> validMoves){
+        if (board[index1+1].contains(" ") && board[index1+2].contains(" ")){
+            validMoves.add(2);
+        }
+        if (board[index1-1].contains(" ") && board[index1-2].contains(" ") && board[index1-3].contains(" ")){
+            validMoves.add(-2);
+        }
+    }
+    public void calculateMove(Vector<Integer> validMoves, int operator, String color, int number, int[] array, boolean king, boolean horse){
         int validIndex = index1;
         int check = 0;
         int i = 1;
