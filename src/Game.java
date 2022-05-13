@@ -16,10 +16,26 @@ public class Game extends JFrame {
             "_p","_p","_p","_p","_p","_p","_p","_p",
             "_r","_h","_b","_q","_k","_b","_h","_r"
     };
+
+    /*
+    private String[] board = new String[]{
+            " "," "," "," "," "," "," "," ",
+            " "," "," ","_p"," "," "," "," ",
+            " "," "," "," "," "," "," "," ",
+            " "," "," "," "," "," "," "," ",
+            " "," "," "," "," "," "," "," ",
+            " "," "," "," "," "," "," "," ",
+            " "," "," "," "," "," "," "," ",
+            " "," "," "," "," "," "," "," ",
+    };
+
+     */
     private int[] borderRight = new int[]{0,8,16,24,32,40,48,56};
     private int[] borderLeft = new int[]{7,15,23,31,39,47,55, 63};
     private Vector<String> deadPlayers = new Vector<>();
-    JPanel deadPLayerBoard = new JPanel(new GridLayout());
+    JPanel deadPlayerBoard = new JPanel(new GridLayout(2,1));
+    JPanel deadPLayerBoardWhite = new JPanel(new GridLayout(0,5));
+    JPanel deadPLayerBoardBlack = new JPanel(new GridLayout(0,5));
     private int[] temp = new int[]{1};
     private int buttonCount = 0;
     private int cntr = 1;
@@ -34,12 +50,20 @@ public class Game extends JFrame {
     private boolean enPassant = false;
     private int enPassantPosition;
     private boolean performEnPassant = false;
+    private boolean pawnPromotion = false;
+    private boolean castlingLeftClear = false;
+    private boolean castlingRightClear = false;
+
     public Game(){
         getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(mainPanel, BorderLayout.CENTER);
-        getContentPane().add(deadPLayerBoard, BorderLayout.EAST);
-        deadPLayerBoard = new JPanel(new GridLayout());
-        getContentPane().add(deadPLayerBoard, BorderLayout.EAST);
+        getContentPane().add(mainPanel, BorderLayout.WEST);
+        getContentPane().add(deadPlayerBoard, BorderLayout.CENTER);
+        deadPlayerBoard.add(deadPLayerBoardWhite);
+        deadPlayerBoard.add(deadPLayerBoardBlack);
+        deadPLayerBoardBlack.setBorder((BorderFactory.createLineBorder(Color.RED)));
+        deadPLayerBoardWhite.setBorder((BorderFactory.createLineBorder(Color.RED)));
+        deadPLayerBoardBlack.setBackground(Color.decode("#ffd39b"));
+        deadPLayerBoardWhite.setBackground(Color.decode("#ffd39b"));
         for (int i = 0; i<8; i++){
             if (i%2==0){
                 createBoard(1);
@@ -51,7 +75,8 @@ public class Game extends JFrame {
         setTitle("Chess v1.31");
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 800);
+        mainPanel.setPreferredSize(new Dimension(800,800));
+        setSize(1200, 800);
         setResizable(false);
     }
     public void createBoard(int set){
@@ -106,6 +131,7 @@ public class Game extends JFrame {
 
                     checkReadyForCastling(index1, index2);
                     checkReadyForEnPassant(index1, index2);
+                    checkPawnPromotion(index1, index2);
 
                     performPlay(index1,index2);
 
@@ -113,7 +139,10 @@ public class Game extends JFrame {
                         castling(index1, index2);
                         castling = false;
                     }
-
+                    if (pawnPromotion){
+                        performPawnPromotion(index1, index2);
+                        pawnPromotion = false;
+                    }
 
                     cntr++;
                     buttons.get(index2).setEnabled(false);
@@ -142,16 +171,16 @@ public class Game extends JFrame {
     public void performPlay(int index1, int index2){
         if (performEnPassant){
             if ((index1 > index2) && index2 == enPassantPosition-8){
-                deadPlayers.add(board[index2+8]);
+                addToKillBoard(board[index2+8]);
                 board[index2+8] = " ";
             }
             else if (index2 == enPassantPosition+8){
-                deadPlayers.add(board[index2-8]);
+                addToKillBoard(board[index2-8]);
                 board[index2-8] = " ";
             }
             performEnPassant = false;
         }
-        deadPlayers.add(board[index2]);
+        addToKillBoard(board[index2]);
         board[index2] = board[index1];
         board[index1] = " ";
         updateBoard();
@@ -175,12 +204,22 @@ public class Game extends JFrame {
             }
         }
     }
+    public void checkPawnPromotion(int index1, int index2){
+        if (pawnPromotion){
+            pawnPromotion = false;
+        }
+        else{
+            if ((board[index1].contains("_p") && index2 >= 0 && index2 <= 7) || (board[index1].contains("-p") && index2 >= 56 && index2 <= 63)){
+                pawnPromotion = true;
+            }
+        }
+    }
     public void castling(int index1, int index2){
-        if (index2 > index1){
+        if (index2 > index1 && castlingRightClear){
             board[index2-1] = board[index2+1];
             board[index2+1] = " ";
         }
-        else{
+        else if (castlingRightClear){
             board[index2+1] = board[index2-2];
             board[index2-2] = " ";
         }
@@ -327,9 +366,11 @@ public class Game extends JFrame {
     public void calculateCastling(int index1, int operator, String color, Vector<Integer> validMoves){
         if (board[index1+1].contains(" ") && board[index1+2].contains(" ")){
             validMoves.add(2);
+            castlingLeftClear = true;
         }
         if (board[index1-1].contains(" ") && board[index1-2].contains(" ") && board[index1-3].contains(" ")){
             validMoves.add(-2);
+            castlingRightClear = true;
         }
     }
     public void calculateMove(Vector<Integer> validMoves, int operator, String color, int number, int[] array, boolean king, boolean horse){
@@ -361,6 +402,20 @@ public class Game extends JFrame {
             }
         }
     }
+    public void performPawnPromotion(int index1, int index2){
+        char color1 = board[index2].charAt(0);
+        String color = Character.toString(color1);
+        PawnPromotionWindow pawnPromotion = new PawnPromotionWindow(color);
+        Method transmition = new Method() {
+            @Override
+            public void fillerMethod() {
+                board[index2] = pawnPromotion.getSelectedPlayer();
+                updateBoard();
+                pawnPromotion.dispose();
+            }
+        };
+        pawnPromotion.setMethod(transmition);
+    }
     public boolean checkBorder(int validIndex, int[] array){
         for (int i = 0; i < array.length; i++){
             if (validIndex == array[i]){
@@ -368,5 +423,16 @@ public class Game extends JFrame {
             }
         }
         return false;
+    }
+    public void addToKillBoard(String deadPlayer){
+        JLabel label = new JLabel();
+        ImageIcon icon = new ImageIcon("files/" + deadPlayer + ".png");
+        label.setIcon(icon);
+        if (deadPlayer.contains("_")){
+            deadPLayerBoardWhite.add(label);
+        }
+        else if (deadPlayer.contains("-")){
+            deadPLayerBoardBlack.add(label);
+        }
     }
 }
