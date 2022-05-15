@@ -17,26 +17,13 @@ public class Game extends JFrame {
             "_r","_h","_b","_q","_k","_b","_h","_r"
     };
 
-    /*
-    private String[] board = new String[]{
-            " "," "," "," "," "," "," "," ",
-            " "," "," ","_p"," "," "," "," ",
-            " "," "," "," "," "," "," "," ",
-            " "," "," "," "," "," "," "," ",
-            " "," "," "," "," "," "," "," ",
-            " "," "," "," "," "," "," "," ",
-            " "," "," "," "," "," "," "," ",
-            " "," "," "," "," "," "," "," ",
-    };
-
-     */
     private int[] borderRight = new int[]{0,8,16,24,32,40,48,56};
     private int[] borderLeft = new int[]{7,15,23,31,39,47,55, 63};
     private Vector<String> deadPlayers = new Vector<>();
     JPanel deadPlayerBoard = new JPanel(new GridLayout(2,1));
     JPanel deadPLayerBoardWhite = new JPanel(new GridLayout(0,5));
     JPanel deadPLayerBoardBlack = new JPanel(new GridLayout(0,5));
-    private int[] temp = new int[]{1};
+    private int[] temp = new int[]{99};
     private int buttonCount = 0;
     private int cntr = 1;
     private int player = 0;
@@ -60,8 +47,8 @@ public class Game extends JFrame {
         getContentPane().add(deadPlayerBoard, BorderLayout.CENTER);
         deadPlayerBoard.add(deadPLayerBoardWhite);
         deadPlayerBoard.add(deadPLayerBoardBlack);
-        deadPLayerBoardBlack.setBorder((BorderFactory.createLineBorder(Color.RED)));
-        deadPLayerBoardWhite.setBorder((BorderFactory.createLineBorder(Color.RED)));
+        deadPLayerBoardBlack.setBorder((BorderFactory.createLineBorder(Color.GRAY)));
+        deadPLayerBoardWhite.setBorder((BorderFactory.createLineBorder(Color.GRAY)));
         deadPLayerBoardBlack.setBackground(Color.decode("#ffd39b"));
         deadPLayerBoardWhite.setBackground(Color.decode("#ffd39b"));
         for (int i = 0; i<8; i++){
@@ -160,7 +147,7 @@ public class Game extends JFrame {
                 if (board[index1].contains("_")){
                     markFields(validation(index1,-1, "_"), index1);
                 }
-                else{
+                else {
                     markFields(validation(index1,1, "-"), index1);
                 }
                 cntr++;
@@ -219,7 +206,7 @@ public class Game extends JFrame {
             board[index2-1] = board[index2+1];
             board[index2+1] = " ";
         }
-        else if (castlingRightClear){
+        else if(castlingLeftClear){
             board[index2+1] = board[index2-2];
             board[index2-2] = " ";
         }
@@ -343,8 +330,10 @@ public class Game extends JFrame {
         if (index1 >= num1 && index1 <= num2 && board[index1+(16*operator)].equals(" ") && board[index1+(16*operator)] != null  && board[index1+(8*operator)].equals(" ")){
             validMoves.add(16*operator);
         }
-        if (!board[index1+(9*operator)].equals(color) && !board[index1+9*operator].equals(" ")){
-            calculateMove(validMoves, operator, color, 9, arr1, true, false);
+        if (!((operator == -1 && index1-9 < 0) || (operator == 1 && index1+9 > 63))){
+            if (!board[index1+(9*operator)].equals(color) && !board[index1+9*operator].equals(" ")){
+                calculateMove(validMoves, operator, color, 9, arr1, true, false);
+            }
         }
         if (!board[index1+(7*operator)].equals(color) && !board[index1+(7*operator)].equals(" ")){
             calculateMove(validMoves, operator, color, 7, arr2, true, false);
@@ -366,11 +355,11 @@ public class Game extends JFrame {
     public void calculateCastling(int index1, int operator, String color, Vector<Integer> validMoves){
         if (board[index1+1].contains(" ") && board[index1+2].contains(" ")){
             validMoves.add(2);
-            castlingLeftClear = true;
+            castlingRightClear = true;
         }
         if (board[index1-1].contains(" ") && board[index1-2].contains(" ") && board[index1-3].contains(" ")){
             validMoves.add(-2);
-            castlingRightClear = true;
+            castlingLeftClear = true;
         }
     }
     public void calculateMove(Vector<Integer> validMoves, int operator, String color, int number, int[] array, boolean king, boolean horse){

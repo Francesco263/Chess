@@ -38,9 +38,7 @@ public class PawnPromotionWindow extends JFrame {
         setResizable(false);
         setVisible(true);
     }
-
     class Listener implements ActionListener {
-
         @Override
         public void actionPerformed(ActionEvent e) {
             JButton button = (JButton) e.getSource();
