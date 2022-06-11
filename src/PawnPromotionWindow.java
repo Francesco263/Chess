@@ -10,7 +10,7 @@ public class PawnPromotionWindow extends JFrame {
     JPanel mainPanel = new JPanel(new BorderLayout());
     JPanel topPanel = new JPanel();
     JPanel bottomPanel = new JPanel(new GridLayout(1,4));
-    JLabel info = new JLabel("Choose a Player");
+    JLabel info = new JLabel("Choose a player");
     private String selectedPlayer;
     private Method method;
 

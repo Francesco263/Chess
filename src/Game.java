@@ -20,9 +20,12 @@ public class Game extends JFrame {
     private int[] borderRight = new int[]{0,8,16,24,32,40,48,56};
     private int[] borderLeft = new int[]{7,15,23,31,39,47,55, 63};
     private Vector<String> deadPlayers = new Vector<>();
-    JPanel deadPlayerBoard = new JPanel(new GridLayout(2,1));
-    JPanel deadPLayerBoardWhite = new JPanel(new GridLayout(0,5));
-    JPanel deadPLayerBoardBlack = new JPanel(new GridLayout(0,5));
+    private JPanel deadPlayerBoard = new JPanel(new GridLayout(2,1));
+    private JPanel deadPLayerBoardWhite = new JPanel(new GridLayout(0,5));
+    private JPanel deadPLayerBoardBlack = new JPanel(new GridLayout(0,5));
+    private JPanel panelClock = new JPanel(new GridLayout(2,1));
+    private JPanel panelClockWhite = new JPanel();
+    private JPanel panelClockBlack = new JPanel();
     private int[] temp = new int[]{99};
     private int buttonCount = 0;
     private int cntr = 1;
@@ -31,26 +34,35 @@ public class Game extends JFrame {
     private int index2;
     private ArrayList<JButton> buttons = new ArrayList<>(64);
     private JPanel mainPanel = new JPanel(new GridLayout(8,8));
+    private JPanel basePanel = new JPanel(new BorderLayout());
     private boolean castling1 = true;
     private boolean castling2 = true;
     private boolean castling = false;
+    private boolean castlingLeftClear = false;
+    private boolean castlingRightClear = false;
     private boolean enPassant = false;
     private int enPassantPosition;
     private boolean performEnPassant = false;
     private boolean pawnPromotion = false;
-    private boolean castlingLeftClear = false;
-    private boolean castlingRightClear = false;
 
     public Game(){
         getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(mainPanel, BorderLayout.WEST);
-        getContentPane().add(deadPlayerBoard, BorderLayout.CENTER);
+        getContentPane().add(basePanel, BorderLayout.CENTER);
+        getContentPane().add(panelClock, BorderLayout.WEST);
+        basePanel.add(mainPanel, BorderLayout.WEST);
+        basePanel.add(deadPlayerBoard, BorderLayout.CENTER);
         deadPlayerBoard.add(deadPLayerBoardWhite);
         deadPlayerBoard.add(deadPLayerBoardBlack);
         deadPLayerBoardBlack.setBorder((BorderFactory.createLineBorder(Color.GRAY)));
         deadPLayerBoardWhite.setBorder((BorderFactory.createLineBorder(Color.GRAY)));
-        deadPLayerBoardBlack.setBackground(Color.decode("#ffd39b"));
-        deadPLayerBoardWhite.setBackground(Color.decode("#ffd39b"));
+        deadPLayerBoardBlack.setBackground(Color.decode("#ffe4c4"));
+        deadPLayerBoardWhite.setBackground(Color.decode("#ffe4c4"));
+        panelClock.add(panelClockWhite);
+        panelClock.add(panelClockBlack);
+        panelClockBlack.setBorder((BorderFactory.createLineBorder(Color.GRAY)));
+        panelClockWhite.setBorder((BorderFactory.createLineBorder(Color.GRAY)));
+        panelClockBlack.setBackground(Color.decode("#ffe4c4"));
+        panelClockWhite.setBackground(Color.decode("#ffe4c4"));
         for (int i = 0; i<8; i++){
             if (i%2==0){
                 createBoard(1);
@@ -59,11 +71,12 @@ public class Game extends JFrame {
                 createBoard(2);
             }
         }
-        setTitle("Chess v1.31");
+        setTitle("Chess v1.41");
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainPanel.setPreferredSize(new Dimension(800,800));
-        setSize(1200, 800);
+        panelClock.setPreferredSize(new Dimension(400,800));
+        setSize(1600, 800);
         setResizable(false);
     }
     public void createBoard(int set){
@@ -94,6 +107,7 @@ public class Game extends JFrame {
     public void updateBoard(){
         for (int i = 0; i < 64; i++){
             buttons.get(i).setIcon(new ImageIcon("files/" + board[i] + ".png"));
+            buttons.get(i).setDisabledIcon(new ImageIcon("files/" + board[i] + ".png"));
             buttons.get(i).setBorder(null);
             buttons.get(i).setEnabled(false);
             if (player%2==0){
@@ -145,10 +159,14 @@ public class Game extends JFrame {
             else{
                 index1 = Integer.parseInt(button.getName());
                 if (board[index1].contains("_")){
-                    markFields(validation(index1,-1, "_"), index1);
+                    Vector<Integer> validMoves = validation(index1,-1, "_");
+                    validMoves = validateValidMoves(validMoves, -1, "_");
+                    markFields(validMoves, index1);
                 }
                 else {
-                    markFields(validation(index1,1, "-"), index1);
+                    Vector<Integer> validMoves = validation(index1,1, "-");
+                    validMoves = validateValidMoves(validMoves, 1, "-");
+                    markFields(validMoves, index1);
                 }
                 cntr++;
                 player++;
@@ -213,9 +231,7 @@ public class Game extends JFrame {
         updateBoard();
     }
     public void markFields(Vector<Integer> validMoves, int index1){
-        for (int i = 0; i < 64; i++){
-            buttons.get(i).setEnabled(false);
-        }
+        deactivateButtons();
         buttons.get(index1).setEnabled(true);
         for (int i = 0; i < validMoves.size(); i++){
             if (board[index1+validMoves.get(i)] != null){
@@ -392,6 +408,7 @@ public class Game extends JFrame {
         }
     }
     public void performPawnPromotion(int index1, int index2){
+        deactivateButtons();
         char color1 = board[index2].charAt(0);
         String color = Character.toString(color1);
         PawnPromotionWindow pawnPromotion = new PawnPromotionWindow(color);
@@ -413,6 +430,11 @@ public class Game extends JFrame {
         }
         return false;
     }
+    public void deactivateButtons(){
+        for(int i = 0; i < 64; i++){
+            buttons.get(i).setEnabled(false);
+        }
+    }
     public void addToKillBoard(String deadPlayer){
         JLabel label = new JLabel();
         ImageIcon icon = new ImageIcon("files/" + deadPlayer + ".png");
@@ -424,4 +446,42 @@ public class Game extends JFrame {
             deadPLayerBoardBlack.add(label);
         }
     }
+    public Vector<Integer> validateValidMoves(Vector<Integer> validMoves, int operator, String color){
+        /*
+        Vector <Integer> testMoves = new Vector<>();
+        int tempIndex = index1;
+        String tempColor = color;
+
+        if (color.contains("-")){
+            color = "_";
+        }
+        else{
+            color = "-";
+        }
+        operator = operator*-1;
+
+        if (board[index1].contains("k")){
+            for (int i = 0; i < 64; i++){
+                if (board[i].contains(color)){
+                    index1 = i;
+                    testMoves = validation(index1, operator, color);
+                    for (int f = 0; f < validMoves.size(); f++){
+                        for (int h = 0; h < testMoves.size(); h++){
+                            if (validMoves.get(f) + tempIndex == testMoves.get(h) + index1){
+                                validMoves.remove(f);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        index1 = tempIndex;
+        color = tempColor;
+        operator = operator*-1;
+
+         */
+        return validMoves;
+    }
 }
+
