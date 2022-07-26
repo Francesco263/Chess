@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Vector;
 
 public class Game extends JFrame {
+
     private String[] board = new String[]{
             "-r","-h","-b","-q","-k","-b","-h","-r",
             "-p","-p","-p","-p","-p","-p","-p","-p",
@@ -447,41 +448,66 @@ public class Game extends JFrame {
         }
     }
     public Vector<Integer> validateValidMoves(Vector<Integer> validMoves, int operator, String color){
-        /*
-        Vector <Integer> testMoves = new Vector<>();
-        int tempIndex = index1;
-        String tempColor = color;
+        if (board[index1].contains("k")) {
+            String[] backupBoard = board.clone();
+            String backupColor = color;
+            int backupOperator = operator;
+            int backupIndex1 = index1;
+            int backupPlayer = player;
+            int backupCntr = cntr;
+            Vector<Integer> backupValidMoves = new Vector<>(validMoves);
+            Vector<Integer> tempMoves = new Vector<Integer>();
 
-        if (color.contains("-")){
-            color = "_";
-        }
-        else{
-            color = "-";
-        }
-        operator = operator*-1;
+            color = invertColor(color);
+            operator = operator*-1;
+            cntr++;
+            player++;
 
-        if (board[index1].contains("k")){
-            for (int i = 0; i < 64; i++){
-                if (board[i].contains(color)){
-                    index1 = i;
-                    testMoves = validation(index1, operator, color);
-                    for (int f = 0; f < validMoves.size(); f++){
-                        for (int h = 0; h < testMoves.size(); h++){
-                            if (validMoves.get(f) + tempIndex == testMoves.get(h) + index1){
-                                validMoves.remove(f);
+            for (int i = 0; i < validMoves.size(); i++){
+                board[backupIndex1+validMoves.get(i)] = invertColor(color) + "k";
+                board[backupIndex1] = " ";
+                for (int y = 0; y < board.length; y++){
+                    index1 = y;
+                    if (board[y].contains(color)){
+                        tempMoves = validation(index1, operator, color);
+                        for (int f = 0; f < tempMoves.size(); f++){
+                            for (int u = 0; u < backupValidMoves.size(); u++){
+                                if (tempMoves.get(f) + index1 == backupValidMoves.get(u) + backupIndex1){
+                                    if (!((board[y].contains("p") && backupValidMoves.get(u) + backupIndex1 == y + 8*operator) || (board[y].contains("p") && (backupValidMoves.get(u) + backupIndex1 == y + 16*operator)))){
+                                        backupValidMoves.remove(u);
+                                    }
+                                    if(board[y].contains("p") && backupIndex1+1 == y){
+                                        for(int c = 0; c < backupValidMoves.size(); c++){
+                                            if (backupValidMoves.get(c) == 8*operator){
+                                                backupValidMoves.remove(c);
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                board[backupIndex1+validMoves.get(i)] = backupBoard[backupIndex1+validMoves.get(i)];
             }
+
+            validMoves = new Vector<>(backupValidMoves);
+            board = backupBoard.clone();
+            color = backupColor;
+            operator = backupOperator;
+            index1 = backupIndex1;
+            cntr = backupCntr;
+            player = backupPlayer;
+
         }
-
-        index1 = tempIndex;
-        color = tempColor;
-        operator = operator*-1;
-
-         */
         return validMoves;
+    }
+
+    public String invertColor(String color){
+        if (color.equals("_")){
+            return "-";
+        }
+        return "_";
     }
 }
 
