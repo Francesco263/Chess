@@ -32,6 +32,7 @@ public class Game extends JFrame {
     private int cntr = 1;
     private int player = 0;
     private int index1;
+    private int index1Backup;
     private int index2;
     private ArrayList<JButton> buttons = new ArrayList<>(64);
     private JPanel mainPanel = new JPanel(new GridLayout(8,8));
@@ -45,6 +46,7 @@ public class Game extends JFrame {
     private int enPassantPosition;
     private boolean performEnPassant = false;
     private boolean pawnPromotion = false;
+    private boolean simulation = false;
 
     public Game(){
         getContentPane().setLayout(new BorderLayout());
@@ -159,14 +161,17 @@ public class Game extends JFrame {
             }
             else{
                 index1 = Integer.parseInt(button.getName());
+                index1Backup = Integer.parseInt(button.getName());
                 if (board[index1].contains("_")){
-                    Vector<Integer> validMoves = validation(index1,-1, "_");
+                    Vector<Integer> validMoves = validation(index1,-1, "_", false);
                     validMoves = validateValidMoves(validMoves, -1, "_");
+                    index1 = index1Backup;
                     markFields(validMoves, index1);
                 }
                 else {
-                    Vector<Integer> validMoves = validation(index1,1, "-");
+                    Vector<Integer> validMoves = validation(index1,1, "-", false);
                     validMoves = validateValidMoves(validMoves, 1, "-");
+                    index1 = index1Backup;
                     markFields(validMoves, index1);
                 }
                 cntr++;
@@ -235,21 +240,23 @@ public class Game extends JFrame {
         deactivateButtons();
         buttons.get(index1).setEnabled(true);
         for (int i = 0; i < validMoves.size(); i++){
-            if (board[index1+validMoves.get(i)] != null){
-                buttons.get(index1+validMoves.get(i)).setEnabled(true);
-                if (board[index1+validMoves.get(i)].equals(" ")){
-                    buttons.get(index1+validMoves.get(i)).setIcon(new ImageIcon("files/valid.png"));
-                    if ((validMoves.get(i) == 2 || validMoves.get(i) == -2) && castling){
-                        buttons.get(index1+validMoves.get(i)).setBorder(BorderFactory.createLineBorder(Color.GREEN));
+            if (validMoves.get(i) != 0){
+                if (board[index1+validMoves.get(i)] != null){
+                    buttons.get(index1+validMoves.get(i)).setEnabled(true);
+                    if (board[index1+validMoves.get(i)].equals(" ")){
+                        buttons.get(index1+validMoves.get(i)).setIcon(new ImageIcon("files/valid.png"));
+                        if ((validMoves.get(i) == 2 || validMoves.get(i) == -2) && castling){
+                            buttons.get(index1+validMoves.get(i)).setBorder(BorderFactory.createLineBorder(Color.GREEN));
+                        }
                     }
-                }
-                else{
-                    buttons.get(index1+validMoves.get(i)).setBorder(BorderFactory.createLineBorder(Color.RED));
+                    else{
+                        buttons.get(index1+validMoves.get(i)).setBorder(BorderFactory.createLineBorder(Color.RED));
+                    }
                 }
             }
         }
     }
-    public Vector<Integer> validation(int index1, int operator, String color){
+    public Vector<Integer> validation(int index1, int operator, String color, boolean simulation){
         Vector<Integer> validMoves = new Vector<>();
         switch (board[index1]) {
             case "_p":
@@ -273,7 +280,9 @@ public class Game extends JFrame {
             case "-k":
                 prepareBishop(validMoves, color, true, false);
                 prepareRook(validMoves, color, true, false);
-                castling(index1, operator, color, validMoves);
+                if (!simulation){
+                    castling(index1, operator, color, validMoves);
+                }
                 break;
             case "_h":
             case "-h":
@@ -360,7 +369,7 @@ public class Game extends JFrame {
         }
     }
     public void castling(int index1, int operator, String color, Vector<Integer> validMoves){
-        if (color.equals("_") && castling1){
+        if (color.equals("_") && castling1 && board[index1].contains("k")){
             calculateCastling(index1, operator, color, validMoves);
             castling = true;
         }
@@ -449,38 +458,57 @@ public class Game extends JFrame {
     }
     public Vector<Integer> validateValidMoves(Vector<Integer> validMoves, int operator, String color){
         if (board[index1].contains("k")) {
-            String[] backupBoard = board.clone();
-            String backupColor = color;
-            int backupOperator = operator;
-            int backupIndex1 = index1;
-            int backupPlayer = player;
-            int backupCntr = cntr;
-            Vector<Integer> backupValidMoves = new Vector<>(validMoves);
-            Vector<Integer> tempMoves = new Vector<Integer>();
+            validMoves = oneMoveFurther(validMoves, operator, color);
+        }
+        else{
+            if (isKingInDanger(color, operator)){
+                String[] backupBoard = board.clone();
+                Vector<Integer> validMovesNew = new Vector<>(validMoves);
+                for (int i = 0; i < validMovesNew.size(); i++){
+                    board[validMoves.get(i) + index1] = board[index1];
+                    board[index1] = " ";
+                    if (isKingInDanger(color, operator)){
+                        validMovesNew.set(i, 0);
+                    }
+                    board = backupBoard.clone();
+                }
+                validMoves = new Vector<>(validMovesNew);
+            }
+        }
+        return validMoves;
+    }
+    public Vector<Integer> oneMoveFurther(Vector<Integer> validMoves, int operator, String color){
+        String[] backupBoard = board.clone();
+        String backupColor = color;
+        int backupOperator = operator;
+        int backupIndex1 = index1;
+        int backupPlayer = player;
+        int backupCntr = cntr;
+        Vector<Integer> backupValidMoves = new Vector<>(validMoves);
+        Vector<Integer> tempMoves = new Vector<Integer>();
 
-            color = invertColor(color);
-            operator = operator*-1;
-            cntr++;
-            player++;
+        color = invertColor(color);
+        operator = operator*-1;
+        cntr++;
+        player++;
 
-            for (int i = 0; i < validMoves.size(); i++){
-                board[backupIndex1+validMoves.get(i)] = invertColor(color) + "k";
-                board[backupIndex1] = " ";
-                for (int y = 0; y < board.length; y++){
-                    index1 = y;
-                    if (board[y].contains(color)){
-                        tempMoves = validation(index1, operator, color);
-                        for (int f = 0; f < tempMoves.size(); f++){
-                            for (int u = 0; u < backupValidMoves.size(); u++){
-                                if (tempMoves.get(f) + index1 == backupValidMoves.get(u) + backupIndex1){
-                                    if (!((board[y].contains("p") && backupValidMoves.get(u) + backupIndex1 == y + 8*operator) || (board[y].contains("p") && (backupValidMoves.get(u) + backupIndex1 == y + 16*operator)))){
-                                        backupValidMoves.remove(u);
-                                    }
-                                    if(board[y].contains("p") && backupIndex1+1 == y){
-                                        for(int c = 0; c < backupValidMoves.size(); c++){
-                                            if (backupValidMoves.get(c) == 8*operator){
-                                                backupValidMoves.remove(c);
-                                            }
+        for (int i = 0; i < validMoves.size(); i++){
+            board[backupIndex1+validMoves.get(i)] = invertColor(color) + "k";
+            board[backupIndex1] = " ";
+            for (int y = 0; y < board.length; y++){
+                index1 = y;
+                if (board[y].contains(color)){
+                    tempMoves = validation(index1, operator, color, true);
+                    for (int f = 0; f < tempMoves.size(); f++){
+                        for (int u = 0; u < backupValidMoves.size(); u++){
+                            if (tempMoves.get(f) + index1 == backupValidMoves.get(u) + backupIndex1){
+                                if (!((board[y].contains("p") && backupValidMoves.get(u) + backupIndex1 == y + 8*operator) || (board[y].contains("p") && (backupValidMoves.get(u) + backupIndex1 == y + 16*operator)))){
+                                    backupValidMoves.remove(u);
+                                }
+                                if(board[y].contains("p") && backupIndex1+1 == y){
+                                    for(int c = 0; c < backupValidMoves.size(); c++){
+                                        if (backupValidMoves.get(c) == 8*operator){
+                                            backupValidMoves.remove(c);
                                         }
                                     }
                                 }
@@ -488,21 +516,62 @@ public class Game extends JFrame {
                         }
                     }
                 }
-                board[backupIndex1+validMoves.get(i)] = backupBoard[backupIndex1+validMoves.get(i)];
             }
-
-            validMoves = new Vector<>(backupValidMoves);
-            board = backupBoard.clone();
-            color = backupColor;
-            operator = backupOperator;
-            index1 = backupIndex1;
-            cntr = backupCntr;
-            player = backupPlayer;
-
+            board[backupIndex1+validMoves.get(i)] = backupBoard[backupIndex1+validMoves.get(i)];
         }
+
+        validMoves = new Vector<>(backupValidMoves);
+        board = backupBoard.clone();
+        color = backupColor;
+        operator = backupOperator;
+        index1 = backupIndex1;
+        cntr = backupCntr;
+        player = backupPlayer;
+
         return validMoves;
     }
+    public boolean isKingInDanger(String color, int operator){
+        String backupColor = color;
+        int backupOperator = operator;
+        int backupIndex1 = index1;
+        int backupPlayer = player;
+        int backupCntr = cntr;
+        Vector<Integer> tempMoves = new Vector<Integer>();
+        boolean result = false;
+        int kingPosition = 0;
+        boolean castlingHelp = false;
 
+        for (int i = 0; i < board.length; i++){
+            if (board[i].contains(color + "k")){
+                kingPosition = i;
+            }
+        }
+
+        color = invertColor(color);
+        operator = operator*-1;
+        cntr++;
+        player++;
+
+        for (int y = 0; y < board.length; y++){
+            index1 = y;
+            if (board[y].contains(color)){
+                tempMoves = validation(index1, operator, color, true);
+                for (int i = 0; i < tempMoves.size(); i++){
+                    if (tempMoves.get(i) + index1 == kingPosition){
+                        result =  true;
+                    }
+                }
+            }
+        }
+
+        color = backupColor;
+        operator = backupOperator;
+        index1 = backupIndex1;
+        cntr = backupCntr;
+        player = backupPlayer;
+
+        return result;
+    }
     public String invertColor(String color){
         if (color.equals("_")){
             return "-";
