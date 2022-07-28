@@ -37,8 +37,10 @@ public class Game extends JFrame {
     private ArrayList<JButton> buttons = new ArrayList<>(64);
     private JPanel mainPanel = new JPanel(new GridLayout(8,8));
     private JPanel basePanel = new JPanel(new BorderLayout());
-    private boolean castling1 = true;
-    private boolean castling2 = true;
+    private boolean castling1left = true;
+    private boolean castling1right = true;
+    private boolean castling2left = true;
+    private boolean castling2right = true;
     private boolean castling = false;
     private boolean castlingLeftClear = false;
     private boolean castlingRightClear = false;
@@ -47,6 +49,10 @@ public class Game extends JFrame {
     private boolean performEnPassant = false;
     private boolean pawnPromotion = false;
     private boolean simulation = false;
+    private boolean noOptionForPlayer = false;
+    private boolean noOptionForKing = false;
+    private String[] resetBoard = board.clone();
+    private VictoryWindow victoryWindow = new VictoryWindow();
 
     public Game(){
         getContentPane().setLayout(new BorderLayout());
@@ -139,6 +145,9 @@ public class Game extends JFrame {
 
                     performPlay(index1,index2);
 
+                    noOptionForPlayer = false;
+                    noOptionForKing = false;
+
                     if (castling){
                         castling(index1, index2);
                         castling = false;
@@ -150,6 +159,7 @@ public class Game extends JFrame {
 
                     cntr++;
                     buttons.get(index2).setEnabled(false);
+
                 }
                 else{
                     cntr--;
@@ -174,6 +184,18 @@ public class Game extends JFrame {
                     index1 = index1Backup;
                     markFields(validMoves, index1);
                 }
+                if (noOptionForKing && noOptionForPlayer){
+                    String victoryPlayer;
+                    if (board[index1].contains("_")){
+                        victoryPlayer = "black";
+                    }
+                    else{
+                        victoryPlayer = "white";
+                    }
+                    victoryWindow.getWinLabel().setText(" Player " + victoryPlayer + " won!");
+                    victoryWindow.setVisible(true);
+                    deactivateButtons();
+                }
                 cntr++;
                 player++;
             }
@@ -197,11 +219,25 @@ public class Game extends JFrame {
         updateBoard();
     }
     public void checkReadyForCastling(int index1, int index2){
-        if (board[index1].contains("_k") || board[index1].contains("_r")){
-            castling1 = false;
+        if (board[index1].contains("_k")){
+            castling1left = false;
+            castling1right = false;
         }
-        else if (board[index1].contains("-k") || board[index1].contains("-r")){
-            castling2 = false;
+        if (board[index1].contains("-k")){
+            castling2left = false;
+            castling2right = false;
+        }
+        if (board[index1].contains("_r") && index1 == 56){
+            castling1left = false;
+        }
+        if (board[index1].contains("_r") && index1 == 63){
+            castling1right = false;
+        }
+        if (board[index1].contains("-r") && index1 == 0){
+            castling2left = false;
+        }
+        if (board[index1].contains("-r") && index1 == 7){
+            castling2right = false;
         }
     }
     public void checkReadyForEnPassant(int index1, int index2){
@@ -369,23 +405,40 @@ public class Game extends JFrame {
         }
     }
     public void castling(int index1, int operator, String color, Vector<Integer> validMoves){
-        if (color.equals("_") && castling1 && board[index1].contains("k")){
-            calculateCastling(index1, operator, color, validMoves);
-            castling = true;
+        if (color.equals("_")){
+            if (castling1left){
+                calculateCastling(index1, operator, color, validMoves, 1);
+                castling = true;
+            }
+            if (castling1right){
+                calculateCastling(index1, operator, color, validMoves, 2);
+                castling = true;
+            }
+
         }
-        else if (color.equals("-") && castling2){
-            calculateCastling(index1, operator, color, validMoves);
-            castling = true;
+        else if (color.equals("-")){
+            if (castling2left){
+                calculateCastling(index1, operator, color, validMoves, 1);
+                castling = true;
+            }
+            if(castling2right){
+                calculateCastling(index1, operator, color, validMoves, 2);
+                castling = true;
+            }
         }
     }
-    public void calculateCastling(int index1, int operator, String color, Vector<Integer> validMoves){
-        if (board[index1+1].contains(" ") && board[index1+2].contains(" ")){
-            validMoves.add(2);
-            castlingRightClear = true;
+    public void calculateCastling(int index1, int operator, String color, Vector<Integer> validMoves, int position){
+        if (position == 1){
+            if (board[index1-1].contains(" ") && board[index1-2].contains(" ") && board[index1-3].contains(" ")){
+                validMoves.add(-2);
+                castlingLeftClear = true;
+            }
         }
-        if (board[index1-1].contains(" ") && board[index1-2].contains(" ") && board[index1-3].contains(" ")){
-            validMoves.add(-2);
-            castlingLeftClear = true;
+        else if (position == 2){
+            if (board[index1+1].contains(" ") && board[index1+2].contains(" ")){
+                validMoves.add(2);
+                castlingRightClear = true;
+            }
         }
     }
     public void calculateMove(Vector<Integer> validMoves, int operator, String color, int number, int[] array, boolean king, boolean horse){
@@ -422,7 +475,7 @@ public class Game extends JFrame {
         char color1 = board[index2].charAt(0);
         String color = Character.toString(color1);
         PawnPromotionWindow pawnPromotion = new PawnPromotionWindow(color);
-        Method transmition = new Method() {
+        Bridge transmition = new Bridge() {
             @Override
             public void fillerMethod() {
                 board[index2] = pawnPromotion.getSelectedPlayer();
@@ -459,20 +512,24 @@ public class Game extends JFrame {
     public Vector<Integer> validateValidMoves(Vector<Integer> validMoves, int operator, String color){
         if (board[index1].contains("k")) {
             validMoves = oneMoveFurther(validMoves, operator, color);
+            if (validateVictory(validMoves)){
+                noOptionForKing = true;
+            }
         }
         else{
-            if (isKingInDanger(color, operator)){
-                String[] backupBoard = board.clone();
-                Vector<Integer> validMovesNew = new Vector<>(validMoves);
-                for (int i = 0; i < validMovesNew.size(); i++){
-                    board[validMoves.get(i) + index1] = board[index1];
-                    board[index1] = " ";
-                    if (isKingInDanger(color, operator)){
-                        validMovesNew.set(i, 0);
-                    }
-                    board = backupBoard.clone();
+            String[] backupBoard = board.clone();
+            Vector<Integer> validMovesNew = new Vector<>(validMoves);
+            for (int i = 0; i < validMovesNew.size(); i++){
+                board[validMoves.get(i) + index1] = board[index1];
+                board[index1] = " ";
+                if (isKingInDanger(color, operator)){
+                    validMovesNew.set(i, 0);
                 }
-                validMoves = new Vector<>(validMovesNew);
+                board = backupBoard.clone();
+            }
+            validMoves = new Vector<>(validMovesNew);
+            if(checkPlayerMoves(operator, color)){
+                noOptionForPlayer = true;
             }
         }
         return validMoves;
@@ -488,7 +545,7 @@ public class Game extends JFrame {
         Vector<Integer> tempMoves = new Vector<Integer>();
 
         color = invertColor(color);
-        operator = operator*-1;
+        operator = operator * -1;
         cntr++;
         player++;
 
@@ -572,11 +629,52 @@ public class Game extends JFrame {
 
         return result;
     }
+    public boolean checkPlayerMoves(int operator, String color){
+        boolean result = true;
+        String[] backupBoard = board.clone();
+        int backupIndex1 = index1;
+        Vector<Integer> tempMoves = new Vector<Integer>();
+        for(int i = 0; i < board.length; i++){
+            index1 = i;
+            if (!board[i].contains("k") && board[i].contains(color)){
+                tempMoves = validation(index1, operator, color, true);
+                for (int y = 0; y < tempMoves.size(); y++){
+                    board[tempMoves.get(y) + index1] = board[index1];
+                    board[index1] = " ";
+                    if (isKingInDanger(color, operator)){
+                        tempMoves.set(y, 0);
+                    }
+                    board = backupBoard.clone();
+                }
+                if (!validateVictory(tempMoves)){
+                    result = false;
+                }
+            }
+        }
+        board = backupBoard.clone();
+        index1 = backupIndex1;
+        return result;
+    }
     public String invertColor(String color){
         if (color.equals("_")){
             return "-";
         }
         return "_";
+    }
+    public boolean validateVictory(Vector<Integer> validMoves){
+        boolean result = true;
+        if (validMoves.size() == 0){
+            return true;
+        }
+        for (int i = 0; i < validMoves.size(); i++){
+            if (validMoves.get(i) != 0){
+                result = false;
+            }
+        }
+        return result;
+    }
+    public VictoryWindow getVictoryWindow() {
+        return victoryWindow;
     }
 }
 

@@ -1,3 +1,3 @@
-public interface Method {
+public interface Bridge {
     void fillerMethod();
 }

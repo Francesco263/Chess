@@ -12,7 +12,7 @@ public class PawnPromotionWindow extends JFrame {
     JPanel bottomPanel = new JPanel(new GridLayout(1,4));
     JLabel info = new JLabel("Choose a player");
     private String selectedPlayer;
-    private Method method;
+    private Bridge bridge;
 
     public PawnPromotionWindow(String color){
         this.color = color;
@@ -43,11 +43,11 @@ public class PawnPromotionWindow extends JFrame {
         public void actionPerformed(ActionEvent e) {
             JButton button = (JButton) e.getSource();
             selectedPlayer = color + players[Integer.parseInt(button.getName())];
-            method.fillerMethod();
+            bridge.fillerMethod();
         }
     }
-    public void setMethod(Method method) {
-        this.method = method;
+    public void setMethod(Bridge bridge) {
+        this.bridge = bridge;
     }
     public String getSelectedPlayer() {
         return selectedPlayer;
