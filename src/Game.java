@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Vector;
 
@@ -54,6 +55,11 @@ public class Game extends JFrame {
     private String[] resetBoard = board.clone();
     private VictoryWindow victoryWindow = new VictoryWindow();
 
+    private Timer countdownTimer1;
+    private Timer countdownTimer2;
+    private long startTime = -1;
+    private long duration = 1800000;
+
     public Game(){
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(basePanel, BorderLayout.CENTER);
@@ -80,13 +86,24 @@ public class Game extends JFrame {
                 createBoard(2);
             }
         }
-        setTitle("Chess v1.41");
+        setTitle("Chess v2.00");
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainPanel.setPreferredSize(new Dimension(800,800));
         panelClock.setPreferredSize(new Dimension(400,800));
         setSize(1600, 800);
         setResizable(false);
+
+        JLabel timer1 = timer1();
+        JLabel timer2 = timer2();
+        timer1.setText("30:00:000");
+        timer2.setText("30:00:000");
+        timer1.setFont(new Font("sunserif", Font.BOLD, 22));
+        timer2.setFont(new Font("sunserif", Font.BOLD, 22));
+
+        panelClockBlack.add(timer1);
+        panelClockWhite.add(timer2);
+
     }
     public void createBoard(int set){
         for (int i = 0; i < 8; i++){
@@ -138,6 +155,14 @@ public class Game extends JFrame {
             if (cntr%2 == 0){
                 index2 = Integer.parseInt(button.getName());
                 if (index1 != index2){
+                    if (board[index1].contains("_")){
+                        countdownTimer1.stop();
+                        countdownTimer2.start();
+                    }
+                    else{
+                        countdownTimer2.stop();
+                        countdownTimer1.start();
+                    }
 
                     checkReadyForCastling(index1, index2);
                     checkReadyForEnPassant(index1, index2);
@@ -173,18 +198,24 @@ public class Game extends JFrame {
                 index1 = Integer.parseInt(button.getName());
                 index1Backup = Integer.parseInt(button.getName());
                 if (board[index1].contains("_")){
+                    countdownTimer1.start();
+                    countdownTimer2.stop();
                     Vector<Integer> validMoves = validation(index1,-1, "_", false);
                     validMoves = validateValidMoves(validMoves, -1, "_");
                     index1 = index1Backup;
                     markFields(validMoves, index1);
                 }
                 else {
+                    countdownTimer2.start();
+                    countdownTimer1.stop();
                     Vector<Integer> validMoves = validation(index1,1, "-", false);
                     validMoves = validateValidMoves(validMoves, 1, "-");
                     index1 = index1Backup;
                     markFields(validMoves, index1);
                 }
                 if (noOptionForKing && noOptionForPlayer){
+                    countdownTimer1.stop();
+                    countdownTimer2.stop();
                     String victoryPlayer;
                     if (board[index1].contains("_")){
                         victoryPlayer = "black";
@@ -675,6 +706,56 @@ public class Game extends JFrame {
     }
     public VictoryWindow getVictoryWindow() {
         return victoryWindow;
+    }
+    public JLabel timer1(){
+        JLabel label = new JLabel();
+        countdownTimer1 = new Timer(10, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (startTime < 0) {
+                    startTime = System.currentTimeMillis();
+                }
+                long now = System.currentTimeMillis();
+                long clockTime = now - startTime;
+                if (clockTime >= duration) {
+                    clockTime = duration;
+                    countdownTimer1.stop();
+                    timeIsUp("black");
+                }
+                SimpleDateFormat df = new SimpleDateFormat("mm:ss:SSS");
+                label.setText(df.format(duration - clockTime));
+            }
+        });
+        countdownTimer1.setInitialDelay(0);
+        return label;
+    }
+    public JLabel timer2(){
+        JLabel label = new JLabel();
+        countdownTimer2 = new Timer(10, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (startTime < 0) {
+                    startTime = System.currentTimeMillis();
+                }
+                long now = System.currentTimeMillis();
+                long clockTime = now - startTime;
+                if (clockTime >= duration) {
+                    clockTime = duration;
+                    countdownTimer2.stop();
+                    timeIsUp("white");
+                }
+                SimpleDateFormat df = new SimpleDateFormat("mm:ss:SSS");
+                label.setText(df.format(duration - clockTime));
+            }
+        });
+        countdownTimer2.setInitialDelay(0);
+        return label;
+    }
+    public void timeIsUp(String player){
+        victoryWindow.setVisible(true);
+        deactivateButtons();
+        victoryWindow.setTitle("Time is up!");
+        victoryWindow.getWinLabel().setText("Player " + player + " won!");
     }
 }
 

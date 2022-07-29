@@ -18,6 +18,7 @@ public class GameManagement{
             chess.dispose();
             chess = new Game();
             chess.updateBoard();
+            chess.getVictoryWindow().getSubmit().addActionListener(new VictoryListener());
         }
     }
 }
