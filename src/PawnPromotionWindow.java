@@ -19,7 +19,7 @@ public class PawnPromotionWindow extends JFrame {
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(mainPanel, BorderLayout.CENTER);
         mainPanel.add(topPanel, BorderLayout.NORTH);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
+        mainPanel.add(bottomPanel, BorderLayout.CENTER);
         topPanel.add(info);
         info.setFont(new Font("sunserif", Font.BOLD, 16));
         topPanel.setBackground(Color.decode("#ffd39b"));
@@ -27,7 +27,7 @@ public class PawnPromotionWindow extends JFrame {
         for (int i = 0; i < 4; i++){
             JButton button = new JButton();
             button.setBackground(Color.decode("#ffd39b"));
-            button.setIcon(new ImageIcon("files/" + color + players[i] + ".png"));
+            button.setIcon(new ImageIcon("resources/" + color + players[i] + ".png"));
             button.setName(Integer.toString(i));
             button.addActionListener(new Listener());
             bottomPanel.add(button);

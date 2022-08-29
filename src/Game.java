@@ -190,7 +190,9 @@ public class Game extends JFrame {
                     cntr--;
                     player--;
                     castling = false;
-                    performEnPassant = false;
+                    if (performEnPassant){
+                        enPassant = true;
+                    }
                     updateBoard();
                 }
             }
