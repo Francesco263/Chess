@@ -86,7 +86,7 @@ public class Game extends JFrame {
                 createBoard(2);
             }
         }
-        setTitle("Chess v2.00");
+        setTitle("Chess v.2.00");
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainPanel.setPreferredSize(new Dimension(800,800));
@@ -132,8 +132,8 @@ public class Game extends JFrame {
     }
     public void updateBoard(){
         for (int i = 0; i < 64; i++){
-            buttons.get(i).setIcon(new ImageIcon("files/" + board[i] + ".png"));
-            buttons.get(i).setDisabledIcon(new ImageIcon("files/" + board[i] + ".png"));
+            buttons.get(i).setIcon(new ImageIcon("resources/" + board[i] + ".png"));
+            buttons.get(i).setDisabledIcon(new ImageIcon("resources/" + board[i] + ".png"));
             buttons.get(i).setBorder(null);
             buttons.get(i).setEnabled(false);
             if (player%2==0){
@@ -311,7 +311,7 @@ public class Game extends JFrame {
                 if (board[index1+validMoves.get(i)] != null){
                     buttons.get(index1+validMoves.get(i)).setEnabled(true);
                     if (board[index1+validMoves.get(i)].equals(" ")){
-                        buttons.get(index1+validMoves.get(i)).setIcon(new ImageIcon("files/valid.png"));
+                        buttons.get(index1+validMoves.get(i)).setIcon(new ImageIcon("resources/valid.png"));
                         if ((validMoves.get(i) == 2 || validMoves.get(i) == -2) && castling){
                             buttons.get(index1+validMoves.get(i)).setBorder(BorderFactory.createLineBorder(Color.GREEN));
                         }
@@ -531,7 +531,7 @@ public class Game extends JFrame {
     }
     public void addToKillBoard(String deadPlayer){
         JLabel label = new JLabel();
-        ImageIcon icon = new ImageIcon("files/" + deadPlayer + ".png");
+        ImageIcon icon = new ImageIcon("resources/" + deadPlayer + ".png");
         label.setIcon(icon);
         if (deadPlayer.contains("_")){
             deadPLayerBoardWhite.add(label);
